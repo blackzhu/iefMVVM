@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://unpkg.com/san@latest/dist/san.dev.js"></script>
+    <title>Document</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        #inputbox {
+            padding: 20px 0px;
+            border-bottom: solid 1px #CFCFCF;
+        }
+
+        #inputbox input {
+            margin: 0 20px;
+        }
+
+        #clear {
+            margin: 10px 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #CFCFCF
+        }
+
+        #clearinfo,
+        #showinfo {
+            margin-left: 10px;
+        }
+
+        #showinfo li {
+            list-style: none;
+            padding: 5px;
+        }
+
+        #showinfo li span:nth-child(2) {
+            display: inline-block;
+            width: 10em;
+            border-bottom: 1px solid #000
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        var MyApp = san.defineComponent({
+            template: `<div id="app">
+                <div id="inputbox">  
+                    <input type="text" name="name" id="name" placeholder="姓名String" value="{=user.name=}">
+                    <input type="number" name="age" id="age" placeholder="年龄Number" value="{=user.age=}">
+                    <input type="text" name="info" id="info" placeholder="简介String" value="{=user.info=}">
+                </div>
+                <div id="showinfo">
+                    <div id="clear">信息:
+                        <button id="clearinfo" on-click="removeinfo">信息移除</button>
+                    </div>
+                    <ul id="showinfo">
+                        <li>
+                            <span>姓名:</span>
+                            <span>{{user.name}}</span>
+                        </li>
+                        <li>
+                            <span>年龄:</span>
+                            <span>{{user.age}}</span>
+                        </li>
+                        <li>
+                            <span>简介:</span>
+                            <span>{{user.info}}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>`,
+            initDate: function () {
+                return {
+                    user: {
+                        name: '',
+                        age: null,
+                        info: '',
+                    }
+                }
+            },
+            removeinfo: function () {
+                this.data.set("user", { name: '', age: null, info: '', });
+            }
+        });
+        var myApp = new MyApp();
+        myApp.attach(document.body);
+    </script>
+
+</body>
+
+</html>
