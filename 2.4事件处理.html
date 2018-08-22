@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://unpkg.com/san@latest/dist/san.dev.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+
+    <script>
+        const Grandson = san.defineComponent({
+            template: `
+                        <div id="grandson">
+                            <span>子组件：<input type="text" value="{= message =}"/></span>
+                            <button on-click="dispatchToFather">通知父组件</button>
+                        </div>
+                    `,
+            initData: function () {
+                return {
+                    message: ''
+                }
+            },
+            //向组件树上层传消息
+            dispatchToFather: function () {
+                this.dispatch('fatherReceived', this.data.get('message'))
+            }
+        })
+
+        var Father = san.defineComponent({
+            components: {
+                'grandson': Grandson
+            },
+            template: `
+                        <div id="father">
+                            <grandson></grandson>
+                            <span>父组件:<input type="text" style="border:none" value="{{message}}"/></span>
+                        </div>
+                    `,
+            initData: function () {
+                return {
+                    message: '静静等待用户输入'
+                }
+            },
+            //Grandsan组传递来的消息
+            messages: {
+                'fatherReceived': function (arg) {
+                    // messages 是一个对象，key 是消息名称，value 是消息处理的函数
+                    // arg.target 可以拿到派发消息的组件
+                    var message = arg.value
+                    this.data.set('message', message)
+                    this.dispatch('grandpaReceived', message)
+                }
+            }
+        })
+
+        var Grandpa = san.defineComponent({
+            components: {
+                'father': Father
+            },
+            template: `
+                        <div id="grandpa">
+                            <father></father>
+                            <span>我是更高层父组件：<input type="text" style="border:none" value="{{message}}"/></span>
+                        </div>
+                    `,
+            initData: function () {
+                return {
+                    message: '我也静静等待用户输入'
+                }
+            },
+            // Father 组件传递来消息
+            messages: {
+                'grandpaReceived': function (arg) {
+                    var message = arg.value
+                    this.data.set('message', message)
+                }
+            }
+        })
+        var Family = san.defineComponent({
+            components: {
+                'grandson': Grandson,
+                'father': Father,
+                'grandpa': Grandpa
+            },
+            template: `
+                        <div id="family">
+                            <grandpa></grandpa>
+                        </div>
+                    `,
+        })
+        // 初始化组件对象
+        var family = new Family()
+        family.attach(document.body);
+    </script>
+</body>
+
+</html>
