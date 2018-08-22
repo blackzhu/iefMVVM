@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://unpkg.com/san@latest/dist/san.dev.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+
+    <script>
+        var MyApp = san.defineComponent({
+            template: `
+            <div>
+                <button on-click="addStudent">添加</button>
+                <table border="1">
+                    <tr>
+                        <th>姓名</th>
+                        <th>审核状态</th>
+                        <th>操作</th>
+                    </tr>
+                    <tr s-for="student,index in students">
+                        <td>{{student.name}}</td>
+                        <template>
+                            <td s-if="student.status === 0">待审核</td>
+                            <td s-elif="student.status === 1">不合格</td>
+                            <td s-else="student.status === 2">合格</td>
+                        </template>
+                        <template>
+                            <td s-if="student.status === 0"><button on-click="reviewStudent(index)">审核</button></td>
+                            <td s-elif="student.status !== 0"><button on-click="removeStudent(index)">删除</button></td>
+                        </template>
+                    </tr>
+                </table>
+            </div>
+            `,
+            initData: function () {
+                return {
+                    students: [
+                        { name: '张三', status: 2 },
+                        { name: '李四', status: 1 },
+                        { name: '王五', status: 0 },
+                        { name: '赵六', status: 0 },
+                        { name: '孙七', status: 0 }
+                    ]
+                }
+            },
+            addStudent:function () {
+                var name=prompt('请输入学生姓名');
+                this.data.push('students',{
+                    name:name,
+                    status:0
+                })
+            },
+            reviewStudent:function (index) {
+                this.data.set('students['+index+'].status',2);
+            },
+            removeStudent:function (index) {
+                this.data.removeAt('students',index);
+            }
+        })
+        var myApp=new MyApp();
+        myApp.attach(document.body);
+    </script>
+</body>
+
+</html>
