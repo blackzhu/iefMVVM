@@ -37,6 +37,7 @@
                 </table>
             </div>
             `,
+            //初始化数据
             initData: function () {
                 return {
                     students: [
@@ -48,6 +49,7 @@
                     ]
                 }
             },
+            //添加学生
             addStudent:function () {
                 var name=prompt('请输入学生姓名');
                 this.data.push('students',{
@@ -55,9 +57,11 @@
                     status:0
                 })
             },
+            //审核
             reviewStudent:function (index) {
                 this.data.set('students['+index+'].status',2);
             },
+            //删除
             removeStudent:function (index) {
                 this.data.removeAt('students',index);
             }
