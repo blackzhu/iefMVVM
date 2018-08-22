@@ -1,0 +1,460 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://unpkg.com/san@latest/dist/san.dev.js"></script>
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .boxHeader {
+            height: 155px;
+            width: auto;
+            background-color: #5c5c5c;
+            padding-top: 32.75px;
+            padding-left: 25px;
+        }
+
+        .boxHeader h1 {
+            color: #ffffff;
+            font-weight: normal;
+        }
+
+        .boxHeader p {
+            color: #929292;
+        }
+
+        .boxMain {
+            height: auto;
+            box-sizing: border-box;
+            padding: 25px;
+        }
+
+        #inputBox input {
+            width: 100%;
+            font-size: 12px;
+            padding: 4px;
+            border: 1px solid #ccc;
+            transition: 0.3s all;
+            box-sizing: border-box;
+        }
+
+        .inputWrap {
+            display: flex;
+            margin: 7px 0;
+        }
+
+        .inputWrap * {
+            flex: 1;
+        }
+
+        /* san-input */
+
+        .input {
+            position: relative;
+        }
+
+        input:disabled {
+            background-color: #f7f7f7;
+        }
+
+        input:hover {
+            border: 1px solid blue;
+        }
+
+        input:focus {
+            /* remove default Apple OS X blue outline */
+            outline: none;
+            border: 1px solid blue;
+        }
+
+        .alert {
+            color: red;
+            font-size: 8px;
+            display: inline-block;
+        }
+
+        .instruction {
+            position: absolute;
+            bottom: 100%;
+            width: 100%;
+            left: 0;
+            background: #fff2f2;
+            color: #d66666;
+            font-size: 8px;
+            box-sizing: border-box;
+            padding: 8px;
+            opacity: 0.9;
+            display: inline-block;
+        }
+
+        /* checkbox */
+
+        label {
+            display: inline-block;
+        }
+
+        input[type="checkbox"] {
+            display: none;
+            margin: 0;
+        }
+
+        input[type="checkbox"]+label span {
+            display: inline-block;
+            height: 35px;
+            /* set the text and checkbox to be the same height  */
+            vertical-align: middle;
+            line-height: 2rem;
+        }
+
+        input[type="checkbox"]+label span.checkbox {
+            background: url('unchecked.svg');
+            background-size: contain;
+            opacity: 0.5;
+            width: 35px;
+        }
+
+        input[type="checkbox"]:checked+label span.checkbox {
+            background: url('checked.svg');
+            background-size: contain;
+        }
+
+        input[type="checkbox"]:indeterminate+label span.checkbox {
+            background: url('indeterminate.svg');
+            background-size: contain;
+        }
+
+        input[type="checkbox"]:disabled+label span.checkbox {
+            opacity: 0.2;
+        }
+
+        .sub {
+            margin-left: 35px;
+        }
+
+        .text {
+            margin-left: 4px;
+            color: #505050;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://unpkg.com/san@latest/dist/san.dev.js"></script>
+    <script>
+        // BoxHeader 同时被 InputBox 和 CheckBox 作为子组件
+        // 父组件向子组件传递值的方式见 https://baidu.github.io/san/practice/parent-to-child/
+        // 这里使用 ref，让父组件拿到子组件的实例，直接操作子组件实例的数据
+        const BoxHeader = san.defineComponent({
+            template: `
+                    <div class="boxHeader">
+                        <h1>{{ title }}</h1>
+                        <p>{{ intro }}</p>
+                    </div>
+                `,
+        })
+        // 自定义的 input 组件
+        const SanInput = san.defineComponent({
+            // props: value, placeholder, disabled, readonly
+            template: `
+                    <div class="input">
+                        <input
+                            value="{= value =}"
+                            placeholder="{{ placeholder }}"
+                            disabled="{{ disabled }}"
+                            readonly="{{ readonly }}"
+                            on-input="handleInput($event)"
+                            on-focus="handleFocus($event)"
+                            on-blur="handleBlur($event)"
+                        />
+                        <span s-if="!isValid" class="alert">{{ alert }}</span>
+                        <span s-if="!isValid" class="instruction">{{ instruction }}</span>
+                    </div>
+                `,
+            initData: function () {
+                return {
+                    placeholder: undefined, // @placeholder, type:string, default:undefined
+                    disabled: false, // @disabled, type:boolean, default:false
+                    readonly: false, // @readonly, type:boolean, default:false
+                    value: undefined, // @value, type:string, default:undefined
+                    validate: undefined, // @validate, type:string, default:undefined
+                    isValid: true, // @isValid, type:boolean, default:true, if user input is valid
+                    alert: undefined, // @alert, type:string, default:undefined
+                    isFocused: false, // @isFocused, type:boolean, default:false
+                    instruction: undefined // @instruction, type:string, default:undefined
+                }
+            },
+            handleInput: function (msg) {
+                this.fire('input', msg)
+            },
+            handleFocus: function (msg) {
+                this.fire('focus', msg)
+                // 设置状态为 获得聚焦
+                this.data.set('isFocused', true);
+            },
+            handleBlur: function (msg) {
+                this.fire('blur', msg)
+                // 设置状态为 失去焦点
+                this.data.set('isFocused', false);
+                this.data.set('isValid', true);
+                // 如果数据为空，不作判断
+                if (this.data.get('value') === "" || this.data.get('value') === undefined) {
+                    return;
+                }
+                // 判断检验类型，普通类型 or 邮箱格式
+                if (this.data.get('validate') !== undefined) {
+                    const validateStr = this.data.get('validate');
+                    const userInput = this.data.get('value');
+                    switch (validateStr.toLowerCase()) {
+                        // 如果需要是邮箱格式
+                        case 'email':
+                            if (!/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(userInput)) {
+                                this.data.set('isValid', false);
+                                this.data.set('alert', '请输入正确的邮箱！');
+                                this.data.set('instruction', '电子邮箱一般格式为：mailname@mailaddress.com');
+                            }
+                            break;
+                    }
+                }
+            }
+        })
+        // 用来最终 UI 展示的 input 模块
+        const InputBox = san.defineComponent({
+            components: {
+                'box-header': BoxHeader,
+                'san-input': SanInput
+            },
+            template: `
+                    <div>
+                        <box-header san-ref="son"></box-header>
+                        <div id="inputBox" class="boxMain">
+                            <div class="inputWrap">
+                                <label for="normal">打印打印每一次输入</label>
+                                <san-input placeholder="请输入文字，在控制台查看" on-input="handleInput($event)"></san-input>
+                            </div>
+                            <div class="inputWrap">
+                                <label for="normal">失去焦点时判断格式提示错误文案</label>
+                                <san-input
+                                    placeholder="请输入邮箱号"
+                                    validate="email"
+                                    on-focus="handleFocus($event)"
+                                    on-blur="handleBlur($event)">
+                                </san-input>
+                            </div>
+                            <div class="inputWrap">
+                                <label for="normal">不可输入</label>
+                                <san-input value="{{ disabledMsg }}" placeholder="请输入文字" disabled></san-input>
+                            </div>
+                            <div class="inputWrap">
+                                <label for="normal">只读</label>
+                                <san-input value="{{ readonlyMsg }}" placeholder="请输入文字" readonly></san-input>
+                            </div>
+                        </div>
+                    </div>
+                `,
+            initData: function () {
+                return {
+                    title: '输入框',
+                    intro: '待补充',
+                    disabledMsg: '不可输入区域',
+                    readonlyMsg: '这里是只读区域'
+                }
+            },
+            attached: function () {
+                this.ref('son').data.set('title', this.data.get('title'));
+                this.ref('son').data.set('intro', this.data.get('intro'));
+            },
+            handleInput: function (msg) {
+                console.log(msg.data)
+            },
+            handleFocus: function (msg) {
+                console.log('获得焦点！')
+            },
+            handleBlur: function (msg) {
+                console.log('失去焦点！')
+            }
+        })
+        // 自定义的多选框组件
+        const SanCheckbox = san.defineComponent({
+            components: {
+                'san-checkbox': this
+            },
+            template: `
+                    <div>
+                        <input
+                            type="checkbox"
+                            id="{{ id + '_checkbox' }}"
+                            on-change="handleChange($event)"
+                            checked="{= isChecked =}"
+                            disabled="{= disabled =}" />
+                        <label for="{{ id + '_checkbox' }}">
+                            <span class="checkbox"></span>
+                            <span class="text" s-if="text">{{ text }}</span>
+                        </label>
+                        <div class="sub">
+                            <slot></slot>
+                        </div>
+                    </div>
+                `,
+            messages: {
+                // get message from sub checkbox item and update
+                // issue: cannot use arrorw function here
+                'UI:checkbox-item-checked': function (msg) {
+                    let checked = msg.value;
+                    let subItems = this.data.get('subItems');
+                    // default indeterminate status
+                    this._setIndeterminate(false);
+                    // console.log(this.data.raw.text, subItems.length);
+                    if (subItems.length > 0) {
+                        let checked_item_num = 0;
+                        if (checked === 'indeterminate') {
+                            this._setIndeterminate(true);
+                            this.dispatch('UI:checkbox-item-checked', 'indeterminate');
+                            return;
+                        }
+                        // 每次都做所有subitem的判断性能不好，有没有更优算法？
+                        subItems.map(i => {
+                            console.log(i.data.get('isChecked'));
+                            if (i._getIndeterminate()) {
+                                this._setIndeterminate(true);
+                                return;
+                            }
+                            if (i.data.get('isChecked')) {
+                                checked_item_num++;
+                            }
+                        });
+                        if (checked_item_num === subItems.length) {
+                            this.data.set('isChecked', true);
+                            this.dispatch('UI:checkbox-item-checked', true);
+                        } else if (checked_item_num === 0) {
+                            this.data.set('isChecked', false);
+                            this.dispatch('UI:checkbox-item-checked', false);
+                        } else {
+                            this.data.set('isChecked', false);
+                            this._setIndeterminate(true);
+                            this.dispatch('UI:checkbox-item-checked', 'indeterminate');
+                        }
+                    }
+                }
+            },
+            initData() {
+                return {
+                    //@subItemNum, type: Array<<san-checkbox>Component>[], init: []
+                    // items of the checkbox
+                    subItems: [],
+                    //@isChecked, type: boolean, init: false
+                    isChecked: false,
+                    //@disabled, type: boolean, init: false
+                    disabled: false
+                }
+            },
+            attached() {
+                // update sub item number data
+                this.slot()[0].children.map((i) => {
+                    if (i.subTag === 'san-checkbox') {
+                        this.data.push('subItems', i);
+                    }
+                })
+                // console.log(this.data.get('subItems'));
+                // console.log(this.data.get('id'), this.slot()[0].aNode.children);
+            },
+            handleChange(e) {
+                // fix the difference between Safari and Chrome
+                this.data.set('isChecked', e.target.checked);
+                // judge if it is checked
+                // console.log(e.target.checked);
+                // notify parent component to update sub item numbers
+                this.dispatch('UI:checkbox-item-checked', e.target.checked);
+                // console.log(this.slot()[0].children);
+                // if checked, make all the sub items checked also
+                if (this.data.get('isChecked')) {
+                    this._setAllChildren(this, true);
+                    this.data.set('checkedItemNum', this.data.get('subItemNum'));
+                    // if unchecked, make all the sub items unchecked also
+                } else {
+                    this._setAllChildren(this, false);
+                    this.data.set('checkedItemNum', 0);
+                }
+            },
+            _setAllChildren(Component, boolean) {
+                Component.slot()[0].children.map((i) => {
+                    if (i.subTag === 'san-checkbox') {
+                        i._setIndeterminate(false);
+                        i.data.set('isChecked', boolean);
+                        this._setAllChildren(i, boolean);
+                    }
+                });
+            },
+            _setIndeterminate(boolean) {
+                document.getElementById(this.data.get('id') + '_checkbox').indeterminate = boolean;
+            },
+            _getIndeterminate() {
+                return document.getElementById(this.data.get('id') + '_checkbox').indeterminate;
+            }
+        })
+        const CheckBox = san.defineComponent({
+            components: {
+                'box-header': BoxHeader,
+                'san-checkbox': SanCheckbox
+            },
+            template: `
+                    <div>
+                        <box-header san-ref="son"></box-header>
+                        <div id="checkBox" class="boxMain">
+                            <san-checkbox id="name" text="这里是父级多选框"></san-checkbox>
+                            <san-checkbox id="dishes" text="选择食材" s-ref="checkbox">
+                                <san-checkbox id="dishes_chicken" text="鸡肉"></san-checkbox>
+                                <san-checkbox id="dishes_pork" text="猪肉"></san-checkbox>
+                                <san-checkbox id="dishes_fish" text="鱼肉">
+                                    <san-checkbox id="dishes_fish1" text="鲫鱼"></san-checkbox>
+                                    <san-checkbox id="dishes_fish2" text="鲤鱼"></san-checkbox>
+                                    <san-checkbox id="dishes_fish3" text="鲶鱼"></san-checkbox>
+                                </san-checkbox>
+                                <san-checkbox id="dishes_vegatable" text="蔬菜"></san-checkbox>
+                            </san-checkbox>
+                            <san-checkbox id="name2" disabled text="不可以点选">
+                                <san-checkbox id="name3" text="可以点选"></san-checkbox>
+                                <san-checkbox id="name4" text="可以点选"></san-checkbox>
+                            </san-checkbox>
+                        </div>
+                    </div>
+                `,
+            initData: function () {
+                return {
+                    title: '复选框',
+                    intro: '复选框用于在两个或两个以上有清晰差别的选项中进行选择'
+                }
+            },
+            attached: function () {
+                this.ref('son').data.set('title', this.data.get('title'));
+                this.ref('son').data.set('intro', this.data.get('intro'));
+            }
+        })
+        const App = san.defineComponent({
+            components: {
+                'input-box': InputBox,
+                'check-box': CheckBox
+            },
+            template: `
+                    <div id="app">
+                        <input-box></input-box>
+                        <check-box></check-box>
+                    </div>
+                `,
+            initData: function () {
+                return {
+                }
+            }
+        })
+        // 初始化组件对象
+        let app = new App()
+        app.attach(document.body);
+    </script>
+</body>
+
+</html>
